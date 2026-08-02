@@ -116,8 +116,21 @@ public class VoxyNetworkHandler {
 
     /**
      * Send a payload to the server (client→server).
+     * <p>
+     * Guard: only send when the connected server has registered the
+     * {@code neovoxy:lod_sync} channel (i.e. neovoxy is installed server-side).
+     * Otherwise NeoForge's NetworkRegistry.checkPacket throws
+     * {@code UnsupportedOperationException} and crashes the render thread.
      */
     public static void sendToServer(VoxyPacketPayload payload) {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc == null || mc.getConnection() == null) {
+            return;
+        }
+        if (!net.neoforged.neoforge.network.registration.NetworkRegistry.hasChannel(
+                mc.getConnection(), VoxyPacketPayload.ID)) {
+            return;
+        }
         PacketDistributor.sendToServer(payload);
     }
 
