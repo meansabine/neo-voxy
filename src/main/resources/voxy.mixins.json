@@ -19,7 +19,6 @@
     "sodium.MixinChunkJobQueue",
     "sodium.MixinDefaultChunkRenderer",
     "sodium.MixinRenderSectionManager",
-    "sodium.MixinSodiumOptionsGUI",
     "sodium.MixinSodiumWorldRenderer",
     "iris.CustomUniformsAccessor",
     "iris.IrisRenderingPipelineAccessor",

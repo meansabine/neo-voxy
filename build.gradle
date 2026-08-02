@@ -36,10 +36,11 @@ repositories {
     maven { url "https://maven.neoforged.net/releases" }
 }
 
+def modVersion = project.version.toString()
 processResources {
-    inputs.property "version", project.version
+    inputs.property "version", modVersion
     filesMatching("META-INF/neoforge.mods.toml") {
-        expand "version": project.version
+        expand "version": modVersion
     }
 }
 
@@ -74,9 +75,9 @@ dependencies {
     mappings loom.officialMojangMappings()
     neoForge "net.neoforged:neoforge:${project.neoforge_version}"
 
-    // Sodium for NeoForge (required dependency)
-    modCompileOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-neoforge"
-    modRuntimeOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-neoforge"
+    // Sodium for NeoForge (required dependency) - 0.8.12, compiled against extracted jarjar body
+    modCompileOnly files("libs/sodium-0.8.12-body.jar")
+    modRuntimeOnly files("libs/[钠] sodium-neoforge-0.8.12+mc1.21.1.jar")
 
     // Optional: Iris shaders support
     modCompileOnly("maven.modrinth:iris:1.8.0+1.21.1-neoforge")
