@@ -1,0 +1,29 @@
+{
+  "voxy.config.title": "Voxy-Konfiguration",
+
+  "voxy.config.general": "Allgemein",
+  "voxy.config.threads": "Threads",
+  "voxy.config.storage": "Speicher",
+
+  "voxy.config.general.enabled": "Voxy aktivieren",
+  "voxy.config.general.enabled.tooltip": "Aktiviert oder deaktiviert Voxy vollständig",
+  "voxy.config.general.ingest": "Chunk-Aufnahme",
+  "voxy.config.general.ingest.tooltip": "Aktiviert oder deaktiviert die Fähigkeit von Voxy, neue Chunks in LODs zu konvertieren",
+  "voxy.config.general.quality": "LOD-Qualität",
+  "voxy.config.general.quality.tooltip": "Wie weit jeder LOD-Ring reicht, bevor er auf eine niedrigere Detailstufe herabgestuft wird",
+  "voxy.config.general.geometryBuffer": "Geometriepuffer-Quads",
+  "voxy.config.general.geometryBuffer.tooltip": "Wie viele Quads der Geometriepuffer enthalten kann",
+  "voxy.config.general.maxSections": "Maximale Abschnitte",
+  "voxy.config.general.maxSections.tooltip": "Die maximale Anzahl von Abschnitten, die der Renderer enthalten kann",
+  "voxy.config.general.renderDistance": "Sichtweite",
+  "voxy.config.general.renderDistance.tooltip": "Die Sichtweite in Chunks (auf -1 setzen, um das Entladen von Chunks zu deaktivieren)",
+  "voxy.config.general.nvmesh": "NVIDIA Mesh-Shader verwenden",
+  "voxy.config.general.nvmesh.tooltip": "NVIDIA Mesh-Shader verwenden, wenn möglich, um LODs zu rendern",
+
+  "voxy.config.threads.ingest": "Aufnahme-Threads",
+  "voxy.config.threads.ingest.tooltip": "Wie viele Threads Voxy für die Aufnahme neuer Chunks verwendet",
+  "voxy.config.threads.saving": "Speicher-Threads",
+  "voxy.config.threads.saving.tooltip": "Wie viele Threads Voxy zum Speichern von Abschnitten im Speicher-Backend verwendet",
+  "voxy.config.threads.render": "Render-Threads",
+  "voxy.config.threads.render.tooltip": "Wie viele Threads Voxy zum Generieren von Renderdaten verwendet"
+}

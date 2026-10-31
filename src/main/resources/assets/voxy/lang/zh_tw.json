@@ -1,0 +1,29 @@
+{
+  "voxy.config.title": "Voxy 設定",
+
+  "voxy.config.general": "一般",
+  "voxy.config.threads": "執行緒",
+  "voxy.config.storage": "儲存",
+
+  "voxy.config.general.enabled": "啟用 Voxy",
+  "voxy.config.general.enabled.tooltip": "完全啟用或停用 Voxy",
+  "voxy.config.general.ingest": "區塊匯入",
+  "voxy.config.general.ingest.tooltip": "啟用或停用 Voxy 將新區塊轉換為 LoD 的能力",
+  "voxy.config.general.quality": "LoD 品質",
+  "voxy.config.general.quality.tooltip": "在降級到較低細節等級之前，每個 LoD 環形區域持續的距離",
+  "voxy.config.general.geometryBuffer": "幾何緩衝區四邊形數",
+  "voxy.config.general.geometryBuffer.tooltip": "幾何緩衝區可以容納的四邊形數量",
+  "voxy.config.general.maxSections": "最大區塊段數",
+  "voxy.config.general.maxSections.tooltip": "渲染器可以包含的最大區塊段數",
+  "voxy.config.general.renderDistance": "繪圖距離",
+  "voxy.config.general.renderDistance.tooltip": "以區塊為單位的繪圖距離（設置為 -1 可停用區塊卸載）",
+  "voxy.config.general.nvmesh": "使用 NVIDIA 網格著色器",
+  "voxy.config.general.nvmesh.tooltip": "如果可能，使用 NVIDIA 網格著色器來繪製 LoD",
+
+  "voxy.config.threads.ingest": "匯入",
+  "voxy.config.threads.ingest.tooltip": "Voxy 用於匯入新區塊的執行緒數",
+  "voxy.config.threads.saving": "儲存",
+  "voxy.config.threads.saving.tooltip": "Voxy 用於將區塊段儲存到儲存後端的執行緒數",
+  "voxy.config.threads.render": "繪圖",
+  "voxy.config.threads.render.tooltip": "Voxy 用於產生繪圖資料的執行緒數"
+}

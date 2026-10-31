@@ -1,0 +1,142 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url "https://maven.minecraftforge.net/" }
+        maven { url "https://maven.neoforged.net/releases" }
+    }
+}
+
+plugins {
+    id 'dev.architectury.loom' version '1.7.435'
+    id 'maven-publish'
+    id "com.github.johnrengelman.shadow" version "8.1.1"
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
+    maven { url "https://maven.shedaniel.me/" }
+    maven { url "https://maven.terraformersmc.com/releases/" }
+    maven { url "https://maven.neoforged.net/releases" }
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand "version": project.version
+    }
+}
+
+loom {
+    accessWidenerPath = file("src/main/resources/voxy.accesswidener")
+}
+
+configurations {
+    bundle {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+def targetJavaVersion = 21
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release = targetJavaVersion
+    it.options.deprecation = true
+}
+
+java {
+    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
+    if (JavaVersion.current() < javaVersion) {
+        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+}
+
+dependencies {
+    // Minecraft and mappings
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    neoForge "net.neoforged:neoforge:${project.neoforge_version}"
+
+    // Sodium for NeoForge (required dependency)
+    modCompileOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-neoforge"
+    modRuntimeOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-neoforge"
+
+    // Optional: Iris shaders support
+    modCompileOnly("maven.modrinth:iris:1.8.0+1.21.1-neoforge")
+
+    // Optional: Lithium support (for LithiumHashPalette compatibility)
+    modCompileOnly("maven.modrinth:lithium:mc1.21.1-0.15.0-neoforge")
+
+    // Optional: Nvidium support
+    //modCompileOnly "maven.modrinth:nvidium:0.3.0-beta"
+}
+
+shadowJar {
+    exclude "fabric.mod.json"
+    configurations = [project.configurations.bundle]
+    archiveClassifier.set("dev-shadow")
+}
+
+remapJar {
+    input.set shadowJar.archiveFile
+    dependsOn shadowJar
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}" }
+    }
+}
+
+project.ext.lwjglVersion = "3.3.3"
+project.ext.lwjglNatives = "natives-windows"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
+
+    implementation "org.lwjgl:lwjgl"
+    forgeRuntimeLibrary "org.lwjgl:lwjgl"
+    bundle(implementation("org.lwjgl:lwjgl-lmdb")) { transitive = false }
+    forgeRuntimeLibrary "org.lwjgl:lwjgl-lmdb"
+
+    forgeRuntimeLibrary "org.lwjgl:lwjgl:$lwjglVersion:natives-windows"
+    forgeRuntimeLibrary "org.lwjgl:lwjgl:$lwjglVersion:natives-linux"
+    bundle(forgeRuntimeLibrary("org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-windows")) { transitive = false }
+    bundle(forgeRuntimeLibrary("org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-linux")) { transitive = false }
+    bundle(forgeRuntimeLibrary("org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-linux-arm64")) { transitive = false }
+
+    bundle(implementation("com.github.luben:zstd-jni:1.5.6-3")) { transitive = false }
+
+    // Storage backends
+    bundle(implementation('org.rocksdb:rocksdbjni:8.10.0')) { transitive = false }
+    forgeRuntimeLibrary 'org.rocksdb:rocksdbjni:8.10.0'
+    bundle(implementation('redis.clients:jedis:5.1.0')) { transitive = false }
+    forgeRuntimeLibrary 'redis.clients:jedis:5.1.0'
+    bundle(implementation('org.apache.commons:commons-pool2:2.12.0')) { transitive = false }
+    forgeRuntimeLibrary 'org.apache.commons:commons-pool2:2.12.0'
+    // LZ4 is provided by Minecraft/NeoForge, do not bundle
+    compileOnly 'org.lz4:lz4-java:1.8.0'
+    bundle(implementation('org.tukaani:xz:1.10')) { transitive = false }
+    forgeRuntimeLibrary 'org.tukaani:xz:1.10'
+}

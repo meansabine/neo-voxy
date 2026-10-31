@@ -1,0 +1,29 @@
+{
+  "voxy.config.title": "Настройки Voxy",
+
+  "voxy.config.general": "Общие",
+  "voxy.config.threads": "Потоки",
+  "voxy.config.storage": "Хранилище",
+
+  "voxy.config.general.enabled": "Включить Voxy",
+  "voxy.config.general.enabled.tooltip": "Полностью включает или отключает Voxy",
+  "voxy.config.general.ingest": "Импорт чанков",
+  "voxy.config.general.ingest.tooltip": "Включает или отключает способность Voxy преобразовывать новые чанки в LOD",
+  "voxy.config.general.quality": "Качество LOD",
+  "voxy.config.general.quality.tooltip": "Насколько далеко длится каждое кольцо LOD перед тем, как снизится детализация",
+  "voxy.config.general.geometryBuffer": "Полигоны геометрического буфера",
+  "voxy.config.general.geometryBuffer.tooltip": "Сколько полигонов (quads) может содержать геометрический буфер",
+  "voxy.config.general.maxSections": "Максимум секций",
+  "voxy.config.general.maxSections.tooltip": "Максимальное количество секций, которое может содержать рендерер",
+  "voxy.config.general.renderDistance": "Дальность прорисовки",
+  "voxy.config.general.renderDistance.tooltip": "Дальность прорисовки в чанках (установите -1, чтобы отключить выгрузку чанков)",
+  "voxy.config.general.nvmesh": "Использовать NVIDIA Mesh Shaders",
+  "voxy.config.general.nvmesh.tooltip": "Использовать меш-шейдеры NVIDIA, если это возможно, для рендеринга LOD",
+
+  "voxy.config.threads.ingest": "Потоки импорта",
+  "voxy.config.threads.ingest.tooltip": "Количество потоков, используемых Voxy для импорта новых чанков",
+  "voxy.config.threads.saving": "Потоки сохранения",
+  "voxy.config.threads.saving.tooltip": "Количество потоков, используемых Voxy для сохранения секций в базу данных",
+  "voxy.config.threads.render": "Потоки рендеринга",
+  "voxy.config.threads.render.tooltip": "Количество потоков, используемых Voxy для генерации данных рендеринга"
+}

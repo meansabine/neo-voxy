@@ -1,0 +1,12 @@
+{
+    "required": true,
+    "package": "me.cortex.voxy.common.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "minVersion": "0.8",
+    "mixins": [
+        "MixinLevelCommon"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

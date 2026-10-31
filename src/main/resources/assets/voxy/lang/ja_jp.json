@@ -1,0 +1,29 @@
+{
+  "voxy.config.title": "Voxy 設定",
+
+  "voxy.config.general": "一般",
+  "voxy.config.threads": "スレッド",
+  "voxy.config.storage": "ストレージ",
+
+  "voxy.config.general.enabled": "Voxyを有効化",
+  "voxy.config.general.enabled.tooltip": "Voxyを完全に有効または無効にします",
+  "voxy.config.general.ingest": "チャンクの取り込み",
+  "voxy.config.general.ingest.tooltip": "新規チャンクをLoDに変換するVoxyの機能を有効または無効にします",
+  "voxy.config.general.quality": "LoD品質",
+  "voxy.config.general.quality.tooltip": "各LoDリングがより低い詳細レベルにダウングレードされるまでの維持距離",
+  "voxy.config.general.geometryBuffer": "ジオメトリバッファのクアッド数",
+  "voxy.config.general.geometryBuffer.tooltip": "ジオメトリバッファが保持できるクアッドの数",
+  "voxy.config.general.maxSections": "最大セクション数",
+  "voxy.config.general.maxSections.tooltip": "レンダラーに含めることができるセクションの最大数",
+  "voxy.config.general.renderDistance": "描画距離",
+  "voxy.config.general.renderDistance.tooltip": "チャンク単位での描画距離 (-1に設定するとチャンクのアンロードが無効になります)",
+  "voxy.config.general.nvmesh": "NVIDIAメッシュシェーダーを使用",
+  "voxy.config.general.nvmesh.tooltip": "可能であればLoDの描画にNVIDIAメッシュシェーダーを使用します",
+
+  "voxy.config.threads.ingest": "取り込み",
+  "voxy.config.threads.ingest.tooltip": "新しいチャンクを取り込むためにVoxyが使用するスレッド数",
+  "voxy.config.threads.saving": "保存",
+  "voxy.config.threads.saving.tooltip": "セクションをストレージバックエンドに保存するためにVoxyが使用するスレッド数",
+  "voxy.config.threads.render": "描画",
+  "voxy.config.threads.render.tooltip": "描画データを生成するためにVoxyが使用するスレッド数"
+}

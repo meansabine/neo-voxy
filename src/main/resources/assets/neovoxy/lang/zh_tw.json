@@ -1,0 +1,29 @@
+{
+  "voxy.config.title": "Voxy 設定",
+
+  "voxy.config.general": "常規",
+  "voxy.config.threads": "線程",
+  "voxy.config.storage": "儲存",
+
+  "voxy.config.general.enabled": "啟用 Voxy",
+  "voxy.config.general.enabled.tooltip": "完全啟用 or 禁用 Voxy",
+  "voxy.config.general.ingest": "區塊導入",
+  "voxy.config.general.ingest.tooltip": "啟用或禁用 Voxy 將新區塊轉換為 LOD 的功能",
+  "voxy.config.general.quality": "LOD 品質",
+  "voxy.config.general.quality.tooltip": "每個 LOD 環在降級為更低細節級別之前持續的距離",
+  "voxy.config.general.geometryBuffer": "幾何緩衝區四邊形數",
+  "voxy.config.general.geometryBuffer.tooltip": "幾何緩衝區可以容納的四邊形數",
+  "voxy.config.general.maxSections": "最大區域數",
+  "voxy.config.general.maxSections.tooltip": "渲染器可以包含的最大區域數量",
+  "voxy.config.general.renderDistance": "渲染距離",
+  "voxy.config.general.renderDistance.tooltip": "以區塊為單位的渲染距離（設為 -1 禁用區塊卸載）",
+  "voxy.config.general.nvmesh": "使用 NVIDIA 網格著色器",
+  "voxy.config.general.nvmesh.tooltip": "如果可能，使用 NVIDIA 網格著色器來渲染 LOD",
+
+  "voxy.config.threads.ingest": "導入線程",
+  "voxy.config.threads.ingest.tooltip": "Voxy 導入新區塊時使用的線程數",
+  "voxy.config.threads.saving": "儲存線程",
+  "voxy.config.threads.saving.tooltip": "Voxy 將區域儲存到儲存後端時使用的線程數",
+  "voxy.config.threads.render": "渲染線程",
+  "voxy.config.threads.render.tooltip": "Voxy 生成渲染數據時使用的線程數"
+}
