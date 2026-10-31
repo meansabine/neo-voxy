@@ -132,7 +132,7 @@ public class DeferredChunkQueue {
                 if (instance == null)
                     return;
 
-                var engine = instance.getNullable(deferred.worldId);
+                var engine = instance.getOrCreate(deferred.worldId);
                 if (engine == null)
                     return;
 
