@@ -9,24 +9,55 @@ import java.util.Arrays;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
- * High-performance, zero-external-dependency binary delta patch engine.
- * Encodes XOR byte differences between original and modified class/resource files,
- * compressed using standard GZIP (level 9), with target length and SHA-256 integrity verification.
+ * High-performance, cryptographically masked binary delta patch engine (VXP2).
+ * Eliminates the bsdiff/xdelta "extra block" vulnerability and prevents constant-pool index
+ * shift leaks by masking all target bytes using a cyclic original byte stream XORed with an
+ * AES-256-CTR keystream derived strictly from the official unmodified upstream JAR's SHA-256 hash.
+ *
+ * Mathematical properties:
+ * - Every byte in the delta is dependent on the official upstream JAR's byte stream and hash.
+ * - Zero unmasked plaintext tail bytes when targetLen > origLen (cyclic wrapping + keystream).
+ * - Zero recognizable strings, method signatures, or constant-pool entries in the decompressed diff.
+ * - Hardware AES-NI acceleration via standard Java SE (javax.crypto), zero external dependencies.
  */
 public class DeltaEngine {
-    public static final byte[] MAGIC = new byte[]{'V', 'X', 'P', '1'};
+    public static final byte[] MAGIC_V1 = new byte[]{'V', 'X', 'P', '1'};
+    public static final byte[] MAGIC = new byte[]{'V', 'X', 'P', '2'};
+
+    public static byte[] generateKeystream(byte[] originalBytes, int length) {
+        if (originalBytes == null || originalBytes.length == 0 || length <= 0) {
+            return new byte[length];
+        }
+        try {
+            byte[] key = sha256(originalBytes);
+            byte[] iv = new byte[16];
+            System.arraycopy(key, 0, iv, 0, 16);
+            SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
+            IvParameterSpec ivSpec = new IvParameterSpec(iv);
+            Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
+            return cipher.update(new byte[length]);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate cryptographic keystream", e);
+        }
+    }
 
     public static byte[] createDelta(byte[] originalBytes, byte[] targetBytes) throws IOException {
         byte[] targetHash = sha256(targetBytes);
         int targetLen = targetBytes.length;
         int origLen = (originalBytes != null) ? originalBytes.length : 0;
+        byte[] keystream = generateKeystream(originalBytes, targetLen);
 
         byte[] diff = new byte[targetLen];
         for (int i = 0; i < targetLen; i++) {
-            byte orig = (i < origLen) ? originalBytes[i] : 0;
-            diff[i] = (byte) (targetBytes[i] ^ orig);
+            byte orig = (origLen > 0) ? originalBytes[i % origLen] : 0;
+            byte mask = (byte) (orig ^ keystream[i]);
+            diff[i] = (byte) (targetBytes[i] ^ mask);
         }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -58,7 +89,8 @@ public class DeltaEngine {
 
         byte[] magic = new byte[4];
         dis.readFully(magic);
-        if (!Arrays.equals(magic, MAGIC)) {
+        boolean isV2 = Arrays.equals(magic, MAGIC);
+        if (!isV2 && !Arrays.equals(magic, MAGIC_V1)) {
             throw new IOException("Invalid delta patch magic header: " + Arrays.toString(magic));
         }
 
@@ -70,10 +102,18 @@ public class DeltaEngine {
         byte[] diff = readFully(gzis, targetLen);
 
         int origLen = (originalBytes != null) ? originalBytes.length : 0;
+        byte[] keystream = isV2 ? generateKeystream(originalBytes, targetLen) : null;
+
         byte[] restored = new byte[targetLen];
         for (int i = 0; i < targetLen; i++) {
-            byte orig = (i < origLen) ? originalBytes[i] : 0;
-            restored[i] = (byte) (diff[i] ^ orig);
+            if (isV2) {
+                byte orig = (origLen > 0) ? originalBytes[i % origLen] : 0;
+                byte mask = (byte) (orig ^ keystream[i]);
+                restored[i] = (byte) (diff[i] ^ mask);
+            } else {
+                byte orig = (i < origLen) ? originalBytes[i] : 0;
+                restored[i] = (byte) (diff[i] ^ orig);
+            }
         }
 
         byte[] actualHash = sha256(restored);

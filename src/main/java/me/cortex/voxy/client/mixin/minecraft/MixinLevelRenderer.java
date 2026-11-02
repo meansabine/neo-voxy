@@ -34,9 +34,12 @@ public abstract class MixinLevelRenderer implements IVoxyRenderSystemHolder, IGe
     @Unique
     private @Nullable VoxyRenderSystem renderer;
 
+    @Unique
+    private boolean voxy$isCreatingRenderer = false;
+
     @Override
     public VoxyRenderSystem voxy$getRenderSystem() {
-        if (this.renderer == null && this.level != null) {
+        if (this.renderer == null && this.level != null && !this.voxy$isCreatingRenderer) {
             this.voxy$createRenderer();
         }
         return this.renderer;
@@ -84,33 +87,38 @@ public abstract class MixinLevelRenderer implements IVoxyRenderSystemHolder, IGe
 
     @Override
     public void voxy$createRenderer() {
-        if (this.renderer != null) throw new IllegalStateException("Cannot have multiple renderers");
-        if (!VoxyConfig.CONFIG.enabled) {
-            Logger.info("Not creating renderer due to disabled");
-            return;
+        if (this.renderer != null || this.voxy$isCreatingRenderer) return;
+        this.voxy$isCreatingRenderer = true;
+        try {
+            if (!VoxyConfig.CONFIG.enabled) {
+                Logger.info("Not creating renderer due to disabled");
+                return;
+            }
+            if (!VoxyConfig.CONFIG.isRenderingEnabled()) {
+                Logger.info("Not creating renderer due to disabled rendering");
+                return;
+            }
+            if (this.identifier == null && this.level != null) {
+                this.identifier = WorldIdentifier.of(this.level);
+            }
+            if (this.identifier == null) {
+                Logger.info("Not creating renderer due to null identifier");
+                return;
+            }
+            var instance = (VoxyClientInstance) VoxyCommon.getInstance();
+            if (instance == null) {
+                Logger.info("Not creating renderer due to null instance");
+                return;
+            }
+            WorldEngine world = this.identifier.getOrCreateEngine(true);
+            if (world == null) {
+                Logger.warn("Not creating renderer due to null engine");
+                return;
+            }
+            this.voxy$createEngineDirect(world);
+        } finally {
+            this.voxy$isCreatingRenderer = false;
         }
-        if (!VoxyConfig.CONFIG.isRenderingEnabled()) {
-            Logger.info("Not creating renderer due to disabled rendering");
-            return;
-        }
-        if (this.identifier == null && this.level != null) {
-            this.identifier = WorldIdentifier.of(this.level);
-        }
-        if (this.identifier == null) {
-            Logger.info("Not creating renderer due to null identifier");
-            return;
-        }
-        var instance = (VoxyClientInstance) VoxyCommon.getInstance();
-        if (instance == null) {
-            Logger.info("Not creating renderer due to null instance");
-            return;
-        }
-        WorldEngine world = this.identifier.getOrCreateEngine(true);
-        if (world == null) {
-            Logger.warn("Not creating renderer due to null engine");
-            return;
-        }
-        this.voxy$createEngineDirect(world);
     }
 
     @Unique
