@@ -83,6 +83,7 @@ public class VoxyRenderSystem {
 
     // LOD streaming reception service
     private LodReceptionService lodReceptionService;
+    private final java.util.concurrent.atomic.AtomicBoolean isShutdown = new java.util.concurrent.atomic.AtomicBoolean(false);
 
     private static AbstractSectionRenderer.Factory<?, ? extends IGeometryData> getRenderBackendFactory() {
         return MDICSectionRenderer.FACTORY;
@@ -484,26 +485,35 @@ public class VoxyRenderSystem {
     }
 
     public void shutdown() {
+        if (!this.isShutdown.compareAndSet(false, true)) {
+            return;
+        }
         Logger.info("Flushing download stream");
         DownloadStream.INSTANCE.flushWaitClear();
         Logger.info("Shutting down rendering");
         try {
-            this.worldIn.setDirtyCallback(null);
-            this.worldIn.getMapper().setBiomeCallback(null);
-            this.worldIn.getMapper().setStateCallback(null);
+            if (this.worldIn != null) {
+                this.worldIn.setDirtyCallback(null);
+                if (this.worldIn.getMapper() != null) {
+                    this.worldIn.getMapper().setBiomeCallback(null);
+                    this.worldIn.getMapper().setStateCallback(null);
+                }
+            }
 
-            this.nodeManager.stop();
+            if (this.nodeManager != null) {
+                this.nodeManager.stop();
+            }
 
-            this.modelService.shutdown();
-            this.renderGen.shutdown();
-            this.traversal.free();
-            this.nodeCleaner.free();
-            this.geometryData.free();
+            if (this.modelService != null) this.modelService.shutdown();
+            if (this.renderGen != null) this.renderGen.shutdown();
+            if (this.traversal != null) this.traversal.free();
+            if (this.nodeCleaner != null) this.nodeCleaner.free();
+            if (this.geometryData != null) this.geometryData.free();
             if (this.geoRef != null) {
                 this.geoRef.clean();
             }
 
-            this.boundOutlineRenderer.free();
+            if (this.boundOutlineRenderer != null) this.boundOutlineRenderer.free();
             if (this.visbleSectionStream != null) {
                 this.visbleSectionStream.free();
             }
@@ -512,7 +522,7 @@ public class VoxyRenderSystem {
                 this.columnStreamedBoundStore = null;
             }
 
-            this.viewportSelector.free();
+            if (this.viewportSelector != null) this.viewportSelector.free();
 
             // Shutdown LOD streaming reception
             if (this.lodReceptionService != null) {
@@ -524,7 +534,9 @@ public class VoxyRenderSystem {
         }
         Logger.info("Shutting down render pipeline");
         try {
-            this.pipeline.free();
+            if (this.pipeline != null) {
+                this.pipeline.free();
+            }
         } catch (Exception e) {
             Logger.error("Error releasing render pipeline", e);
         }
@@ -532,7 +544,13 @@ public class VoxyRenderSystem {
         Logger.info("Flushing download stream");
         DownloadStream.INSTANCE.flushWaitClear();
 
-        this.worldIn.releaseRef();
+        try {
+            if (this.worldIn != null && this.worldIn.isLive()) {
+                this.worldIn.releaseRef();
+            }
+        } catch (Exception e) {
+            Logger.warn("Error releasing world reference during renderer shutdown: " + e.getMessage());
+        }
         Logger.info("Render shutdown completed");
     }
 

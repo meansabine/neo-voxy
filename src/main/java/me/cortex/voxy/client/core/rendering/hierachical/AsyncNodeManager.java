@@ -725,7 +725,7 @@ public class AsyncNodeManager {
 
     public void stop() {
         if (!this.running) {
-            throw new IllegalStateException();
+            return;
         }
         this.running = false;
         LockSupport.unpark(this.thread);

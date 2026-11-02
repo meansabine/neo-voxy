@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="neovoxy_loader"
+version="${version}"
+displayName="NeoVoxy Loader"
+description='''
+Runtime dependency locator and legal reconstructor for NeoVoxy.
+Reconstructs the full NeoForge Voxy mod at launch using byte-level patches.
+'''
+authors="Cortex, dripps"
+
+[[dependencies.neovoxy_loader]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.0,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.neovoxy_loader]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.21.2)"
+ordering="NONE"
+side="BOTH"

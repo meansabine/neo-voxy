@@ -38,7 +38,7 @@ repositories {
 
 processResources {
     inputs.property "version", project.version
-    filesMatching("META-INF/neoforge.mods.toml") {
+    filesMatching(["META-INF/neoforge.mods.toml", "META-INF/neoforge.loader.mods.toml"]) {
         expand "version": project.version
     }
 }
@@ -139,4 +139,125 @@ dependencies {
     compileOnly 'org.lz4:lz4-java:1.8.0'
     bundle(implementation('org.tukaani:xz:1.10')) { transitive = false }
     forgeRuntimeLibrary 'org.tukaani:xz:1.10'
+}
+
+def originalVoxyJar = project.hasProperty('originalVoxyJar') ?
+        file(project.property('originalVoxyJar')) :
+        file("${projectDir}/libs/voxy-fabric-0.2.20-beta.jar")
+
+tasks.register('downloadOfficialVoxy') {
+    group = 'build'
+    description = 'Downloads the official unmodified Fabric Voxy JAR from Modrinth CDN if not present.'
+    outputs.file(originalVoxyJar)
+    doLast {
+        if (!originalVoxyJar.exists()) {
+            originalVoxyJar.parentFile.mkdirs()
+            println "Downloading official Fabric Voxy (0.2.20-beta) from Modrinth CDN..."
+            def url = new URI("https://cdn.modrinth.com/data/fxxUqruK/versions/iIrM8ZKQ/voxy-0.2.20-beta.jar").toURL()
+            url.withInputStream { ins ->
+                originalVoxyJar.withOutputStream { outs ->
+                    outs << ins
+                }
+            }
+            println "Successfully downloaded official Fabric Voxy to ${originalVoxyJar}"
+        }
+    }
+}
+
+tasks.register('generateVoxyPatches', JavaExec) {
+    group = 'build'
+    description = 'Generates binary delta patches and additions comparing official Fabric Voxy with compiled NeoForge Voxy.'
+    dependsOn remapJar, downloadOfficialVoxy
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.dripps.voxy.locator.VoxyDiffGenerator'
+
+    args = [
+        originalVoxyJar.absolutePath,
+        remapJar.archiveFile.get().asFile.absolutePath,
+        file("src/generated/resources").absolutePath,
+        project.version.toString()
+    ]
+}
+
+tasks.register('buildDistributableJar', Jar) {
+    group = 'build'
+    description = 'Builds the clean legal distributable NeoForge JAR containing only the IDependencyLocator, patches, and additions.'
+    dependsOn generateVoxyPatches
+
+    archiveClassifier = 'distributable'
+    destinationDirectory = file("${buildDir}/libs")
+
+    // 1. Include only runtime loader/locator classes (exclude raw me.cortex.voxy classes)
+    from(sourceSets.main.output) {
+        include 'com/dripps/voxy/locator/**'
+        include 'META-INF/services/net.neoforged.neoforgespi.locating.IDependencyLocator'
+        include 'META-INF/neoforge.loader.mods.toml'
+        rename { String fileName ->
+            fileName == 'neoforge.loader.mods.toml' ? 'neoforge.mods.toml' : fileName
+        }
+    }
+
+    // 2. Include generated binary patches and additions pack (avoids JPMS package scanning issues)
+    from(file("src/generated/resources")) {
+        include 'voxy_patches/**'
+    }
+
+    // 3. Strict Legal Verification Step
+    doLast {
+        def jarFile = archiveFile.get().asFile
+        def origJar = originalVoxyJar
+
+        println "=================================================="
+        println " Verifying Distributable JAR: ${jarFile.name}     "
+        println "=================================================="
+
+        def origEntries = new HashSet<String>()
+        new java.util.zip.ZipFile(origJar).withCloseable { zip ->
+            zip.entries().each { entry ->
+                if (!entry.directory) origEntries.add(entry.name)
+            }
+        }
+
+        int totalEntries = 0
+        int patchFiles = 0
+        int locatorClasses = 0
+        boolean hasAdditionsPack = false
+
+        new java.util.zip.ZipFile(jarFile).withCloseable { zip ->
+            zip.entries().each { entry ->
+                if (entry.directory) return
+                totalEntries++
+                def name = entry.name
+
+                // Check 1: Root classes must ONLY be locator classes
+                if (name.endsWith('.class')) {
+                    if (!name.startsWith('com/dripps/voxy/locator/')) {
+                        throw new GradleException("LEGAL VIOLATION: Disallowed raw class bundled at root: " + name)
+                    }
+                    locatorClasses++
+                }
+
+                if (name.startsWith('voxy_patches/')) {
+                    if (name.endsWith('voxy_additions.pack')) {
+                        hasAdditionsPack = true
+                    } else {
+                        patchFiles++
+                    }
+                }
+            }
+        }
+
+        if (!hasAdditionsPack) {
+            throw new GradleException("voxy_additions.pack is missing from distributable jar!")
+        }
+
+        println "Verification PASSED:"
+        println "  Total entries:     ${totalEntries}"
+        println "  Locator classes:   ${locatorClasses}"
+        println "  Delta patch files: ${patchFiles}"
+        println "  Additions pack:    PRESENT (voxy_additions.pack)"
+        println "  Original raw .class files: ZERO (0)"
+        println "=================================================="
+    }
 }
