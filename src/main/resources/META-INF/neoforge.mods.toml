@@ -14,6 +14,17 @@ description='''
 Far distance rendering mod utilizing LoDs for massive render distances.
 '''
 
+[[mods]]
+modId="voxy"
+version="${version}"
+displayName="Voxy (NeoVoxy Compatibility Alias)"
+displayTest="IGNORE_SERVER_VERSION"
+logoFile="assets/voxy/icon.png"
+authors="Cortex, dripps"
+description='''
+Compatibility alias providing modId "voxy" for add-ons like Voxy SeedGen.
+'''
+
 [[dependencies.neovoxy]]
 modId="neoforge"
 type="required"
@@ -34,6 +45,27 @@ type="required"
 versionRange="[0.6.0,)"
 ordering="AFTER"
 side="CLIENT"
+
+[[dependencies.voxy]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.0,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.voxy]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.21.2)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.voxy]]
+modId="neovoxy"
+type="required"
+versionRange="[${version},)"
+ordering="NONE"
+side="BOTH"
 
 [[mixins]]
 config="voxy.mixins.json"

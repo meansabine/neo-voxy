@@ -424,7 +424,8 @@ public class VoxyRenderSystem {
         var rawMCProj = makeProjectionMatrix(0.05f, Minecraft.getInstance().gameRenderer.getDepthFar());
         var extraProjection = rawMCProj.invert(new Matrix4f()).mul(base);
 
-        float far = farPlane;
+        // Voxy SeedGen compatibility: VoxyFarPlaneMixin modifies constant 48000.0F in computeProjectionMat
+        float far = (farPlane >= 48000.0f) ? 48000.0f : farPlane;
         float near = nearPlane;
 
         if (properties.isReverseZ()) {
