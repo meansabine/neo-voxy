@@ -88,6 +88,45 @@ compileJava.doLast {
             classFile.bytes = cw.toByteArray()
             println "Successfully added transient int sectionRenderDistance to VoxyConfig.class"
         }
+
+        def worldEngineFile = new File(dir, "me/cortex/voxy/common/world/WorldEngine.class")
+        if (worldEngineFile.exists()) {
+            println "Transforming ${worldEngineFile} to add void saveSection(WorldSection) bridge for SeedGen compat..."
+            def cr = new org.objectweb.asm.ClassReader(worldEngineFile.bytes)
+            def cw = new org.objectweb.asm.ClassWriter(cr, 0)
+            def cv = new org.objectweb.asm.ClassVisitor(org.objectweb.asm.Opcodes.ASM9, cw) {
+                @Override
+                void visitEnd() {
+                    def mv = cv.visitMethod(
+                        org.objectweb.asm.Opcodes.ACC_PUBLIC,
+                        "saveSection",
+                        "(Lme/cortex/voxy/common/world/WorldSection;)V",
+                        null,
+                        null
+                    )
+                    if (mv != null) {
+                        mv.visitCode()
+                        mv.visitVarInsn(org.objectweb.asm.Opcodes.ALOAD, 0)
+                        mv.visitVarInsn(org.objectweb.asm.Opcodes.ALOAD, 1)
+                        mv.visitMethodInsn(
+                            org.objectweb.asm.Opcodes.INVOKEVIRTUAL,
+                            "me/cortex/voxy/common/world/WorldEngine",
+                            "saveSection",
+                            "(Lme/cortex/voxy/common/world/WorldSection;)Z",
+                            false
+                        )
+                        mv.visitInsn(org.objectweb.asm.Opcodes.POP)
+                        mv.visitInsn(org.objectweb.asm.Opcodes.RETURN)
+                        mv.visitMaxs(2, 2)
+                        mv.visitEnd()
+                    }
+                    super.visitEnd()
+                }
+            }
+            cr.accept(cv, 0)
+            worldEngineFile.bytes = cw.toByteArray()
+            println "Successfully added void saveSection(WorldSection) bridge to WorldEngine.class"
+        }
     }
 }
 
