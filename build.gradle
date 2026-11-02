@@ -70,7 +70,7 @@ compileJava.doLast {
             def checkVisitor = new org.objectweb.asm.ClassVisitor(org.objectweb.asm.Opcodes.ASM9) {
                 @Override
                 org.objectweb.asm.FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-                    if (name == "sectionRenderDistance") hasField = true
+                    if (name == "sectionRenderDistance" && descriptor == "I") hasField = true
                     return super.visitField(access, name, descriptor, signature, value)
                 }
             }
