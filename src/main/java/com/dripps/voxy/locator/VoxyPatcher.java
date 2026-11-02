@@ -23,6 +23,7 @@ public class VoxyPatcher {
     private final Path modsDir;
     private final Path cacheDir;
     private final Path voxyCacheDir;
+    private String manifestSha256 = "";
 
     public VoxyPatcher(Path gameDir, Path modsDir, Path cacheDir) {
         this.gameDir = gameDir;
@@ -62,7 +63,9 @@ public class VoxyPatcher {
             return null;
         }
         try {
-            return PatchesManifest.fromStream(is);
+            byte[] bytes = is.readAllBytes();
+            this.manifestSha256 = DeltaEngine.sha256Hex(bytes);
+            return PatchesManifest.fromStream(new ByteArrayInputStream(bytes));
         } catch (IOException e) {
             VoxyLog.error("[NeoVoxy] Failed to parse patches.json: {}", e.getMessage());
             return null;
@@ -77,12 +80,16 @@ public class VoxyPatcher {
             List<String> lines = Files.readAllLines(metaFile, StandardCharsets.UTF_8);
             String cachedVersion = "";
             String cachedOrigSha = "";
+            String cachedManifestSha = "";
             for (String line : lines) {
                 if (line.startsWith("version=")) cachedVersion = line.substring("version=".length()).trim();
                 if (line.startsWith("originalSha256=")) cachedOrigSha = line.substring("originalSha256=".length()).trim();
+                if (line.startsWith("manifestSha256=")) cachedManifestSha = line.substring("manifestSha256=".length()).trim();
             }
             return manifest.modVersion.equals(cachedVersion) &&
                     manifest.originalSha256.equalsIgnoreCase(cachedOrigSha) &&
+                    !cachedManifestSha.isEmpty() &&
+                    this.manifestSha256.equalsIgnoreCase(cachedManifestSha) &&
                     Files.size(patchedJar) > 0;
         } catch (Exception e) {
             VoxyLog.warn("[NeoVoxy] Error reading cache metadata: {}", e.getMessage());
@@ -322,6 +329,7 @@ public class VoxyPatcher {
         // Write meta file
         String metaContent = "version=" + manifest.modVersion + "\n" +
                 "originalSha256=" + manifest.originalSha256 + "\n" +
+                "manifestSha256=" + this.manifestSha256 + "\n" +
                 "created=" + System.currentTimeMillis() + "\n";
         Files.writeString(metaFile, metaContent, StandardCharsets.UTF_8);
     }
