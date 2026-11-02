@@ -2,8 +2,7 @@
 
 <a href="https://discord.gg/5hAxFamnpf"><img src="https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=white&style=flat-square" height="18" alt="Discord"></a>
 <a href="https://minecraft.net/"><img src="https://img.shields.io/badge/Minecraft-1.21.1-brightgreen?logo=minecraft&logoColor=white&style=flat-square" height="18" alt="Minecraft"></a>
-<a href="https://neoforged.net/"><img src="https://img.shields.io/badge/NeoForge-21.1.77+-orange&style=flat-square" height="18" alt="NeoForge"></a>
-<img src="https://img.shields.io/badge/Version-0.6.1-blue&style=flat-square" height="18" alt="Version">
+
 
 > **Neo-Voxy** is an unofficial community port and enhancement of the [Voxy](https://github.com/cortex/voxy) mod by **cortex**, bringing massive-distance Level of Detail (LOD) voxel rendering natively to **NeoForge 1.21.1**.
 
