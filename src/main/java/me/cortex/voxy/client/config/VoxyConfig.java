@@ -23,7 +23,7 @@ public class VoxyConfig implements OptionStorage<VoxyConfig> {
     private static final Gson GSON = new GsonBuilder()
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
             .setPrettyPrinting()
-            .excludeFieldsWithModifiers(Modifier.PRIVATE)
+            .excludeFieldsWithModifiers(Modifier.PRIVATE, Modifier.TRANSIENT)
             .create();
 
     public static VoxyConfig CONFIG = loadOrCreate();
@@ -73,6 +73,7 @@ public class VoxyConfig implements OptionStorage<VoxyConfig> {
                 try (FileReader reader = new FileReader(path.toFile())) {
                     var conf = GSON.fromJson(reader, VoxyConfig.class);
                     if (conf != null) {
+                        conf.syncIntSectionRenderDistance();
                         conf.save();
                         return conf;
                     } else {
@@ -88,17 +89,20 @@ public class VoxyConfig implements OptionStorage<VoxyConfig> {
                 Logger.info("Config file doesnt exist, creating new");
             }
             var config = new VoxyConfig();
+            config.syncIntSectionRenderDistance();
             config.save();
             return config;
         } else {
             var config = new VoxyConfig();
             config.enabled = false;
             config.enableRendering = false;
+            config.syncIntSectionRenderDistance();
             return config;
         }
     }
 
     public void save() {
+        this.syncIntSectionRenderDistance();
         if (!VoxyCommon.isAvailable()) {
             Logger.info("Not saving config since voxy is unavailable");
             return;
@@ -109,6 +113,18 @@ public class VoxyConfig implements OptionStorage<VoxyConfig> {
         } catch (IOException e) {
             Logger.error("Failed to write config file", e);
         }
+    }
+
+    public void syncIntSectionRenderDistance() {
+        try {
+            for (java.lang.reflect.Field field : VoxyConfig.class.getDeclaredFields()) {
+                if (field.getName().equals("sectionRenderDistance") && field.getType() == int.class) {
+                    field.setAccessible(true);
+                    field.setInt(this, (int) Math.ceil(this.sectionRenderDistance));
+                    break;
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     private static Path getConfigPath() {

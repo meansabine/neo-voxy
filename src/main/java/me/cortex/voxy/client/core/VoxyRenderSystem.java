@@ -453,6 +453,7 @@ public class VoxyRenderSystem {
 
     public void setRenderDistance(float renderDistance) {
         this.renderDistanceTracker.setRenderDistance((int) Math.ceil(renderDistance + 1));
+        VoxyConfig.CONFIG.syncIntSectionRenderDistance();
     }
 
     public Viewport<?> getViewport() {

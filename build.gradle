@@ -61,6 +61,36 @@ tasks.withType(JavaCompile).configureEach {
     it.options.deprecation = true
 }
 
+compileJava.doLast {
+    sourceSets.main.output.classesDirs.each { dir ->
+        def classFile = new File(dir, "me/cortex/voxy/client/config/VoxyConfig.class")
+        if (classFile.exists()) {
+            println "Transforming ${classFile} to add int sectionRenderDistance for SeedGen compat..."
+            def cr = new org.objectweb.asm.ClassReader(classFile.bytes)
+            def cw = new org.objectweb.asm.ClassWriter(cr, 0)
+            def cv = new org.objectweb.asm.ClassVisitor(org.objectweb.asm.Opcodes.ASM9, cw) {
+                @Override
+                void visitEnd() {
+                    def fv = cv.visitField(
+                        org.objectweb.asm.Opcodes.ACC_PUBLIC | org.objectweb.asm.Opcodes.ACC_TRANSIENT,
+                        "sectionRenderDistance",
+                        "I",
+                        null,
+                        null
+                    )
+                    if (fv != null) {
+                        fv.visitEnd()
+                    }
+                    super.visitEnd()
+                }
+            }
+            cr.accept(cv, 0)
+            classFile.bytes = cw.toByteArray()
+            println "Successfully added transient int sectionRenderDistance to VoxyConfig.class"
+        }
+    }
+}
+
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     if (JavaVersion.current() < javaVersion) {

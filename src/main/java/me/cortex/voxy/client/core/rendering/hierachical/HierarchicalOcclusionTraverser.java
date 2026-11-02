@@ -226,6 +226,7 @@ public class HierarchicalOcclusionTraverser {
         }
 
         //Put the render distance here so that it can generate a correct circle, TODO: make it not top level section sized
+        VoxyConfig.CONFIG.syncIntSectionRenderDistance();
         MemoryUtil.memPutFloat(ptr, (float) Math.pow(VoxyConfig.CONFIG.sectionRenderDistance*16*32,2));ptr += 4;
 
 

@@ -129,6 +129,7 @@ public abstract class VoxyConfigScreenPages {
                                 v -> Component.literal(Integer.toString(v * 2))))
                         .setBinding((s, v) -> {
                             s.sectionRenderDistance = ((float) v) / 16.0f;
+                            s.syncIntSectionRenderDistance();
                             var vrs = IVoxyRenderSystemHolder.getNullable();
                             if (vrs != null) {
                                 vrs.setRenderDistance(s.sectionRenderDistance);
