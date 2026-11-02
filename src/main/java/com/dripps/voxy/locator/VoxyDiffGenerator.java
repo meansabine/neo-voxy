@@ -22,7 +22,7 @@ public class VoxyDiffGenerator {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 3) {
-            System.err.println("Usage: VoxyDiffGenerator <originalJar> <modifiedJar> <outputResourceDir> [modVersion]");
+            System.err.println("Usage: VoxyDiffGenerator <originalJar> <modifiedJar> <outputResourceDir> [modVersion] [referenceSourceDir]");
             System.exit(1);
         }
 
@@ -30,6 +30,7 @@ public class VoxyDiffGenerator {
         Path modifiedJar = Paths.get(args[1]).toAbsolutePath().normalize();
         Path outputResourceDir = Paths.get(args[2]).toAbsolutePath().normalize();
         String modVersion = (args.length >= 4) ? args[3] : "0.6.1";
+        Path referenceSourceDir = (args.length >= 5) ? Paths.get(args[4]).toAbsolutePath().normalize() : null;
 
         System.out.println("==================================================");
         System.out.println("   NeoVoxy Build-Time Class Diff Generator        ");
@@ -38,6 +39,9 @@ public class VoxyDiffGenerator {
         System.out.println("Modified NeoForge JAR: " + modifiedJar);
         System.out.println("Output Resource Dir:  " + outputResourceDir);
         System.out.println("Mod Version:          " + modVersion);
+        if (referenceSourceDir != null) {
+            System.out.println("Reference Source Dir: " + referenceSourceDir);
+        }
 
         if (!Files.exists(originalJar)) {
             throw new FileNotFoundException("Original JAR not found at: " + originalJar);
@@ -54,6 +58,9 @@ public class VoxyDiffGenerator {
         cleanDirectory(additionsDir);
         Files.createDirectories(patchesDir);
         Files.createDirectories(additionsDir);
+
+        // Load modified sources filter to only diff what actually changed in the port
+        Set<String> modifiedSources = loadModifiedSources(referenceSourceDir);
 
         // Compute original JAR checksums
         String origSha256 = DeltaEngine.sha256File(originalJar);
@@ -96,11 +103,30 @@ public class VoxyDiffGenerator {
 
             if (origEntries.containsKey(path)) {
                 byte[] origBytes = origEntries.get(path);
-                if (Arrays.equals(origBytes, modBytes)) {
-                    // Step 2.1: Byte-for-byte identical -> Exclude from distributable jar
+
+                boolean isModified = false;
+                if (!Arrays.equals(origBytes, modBytes)) {
+                    if (path.endsWith(".class")) {
+                        // Check if the source code of this class actually changed in the NeoForge port
+                        String sourceName = path.split("\\$")[0];
+                        if (sourceName.endsWith(".class")) {
+                            sourceName = sourceName.substring(0, sourceName.length() - 6);
+                        }
+                        sourceName = sourceName + ".java";
+                        if (modifiedSources.contains(sourceName)) {
+                            isModified = true;
+                        }
+                    } else {
+                        // Resource file modification
+                        isModified = true;
+                    }
+                }
+
+                if (!isModified) {
+                    // Unchanged in source code or identical in bytes -> Exclude from distributable jar
                     unchangedCount++;
                 } else {
-                    // Step 2.2: Modified file -> Generate binary delta patch
+                    // Actually modified in port -> Generate binary delta patch
                     modifiedCount++;
                     byte[] delta = DeltaEngine.createDelta(origBytes, modBytes);
                     totalDeltaBytes += delta.length;
@@ -131,18 +157,17 @@ public class VoxyDiffGenerator {
             }
         }
 
-        // Identify stripped files: present in original JAR but NOT in modified JAR
+        // Identify stripped files (files present in original Fabric JAR but not in modified JAR)
         for (String origPath : origEntries.keySet()) {
             if (!modEntries.containsKey(origPath)) {
                 manifest.strippedFiles.add(origPath);
             }
         }
-        Collections.sort(manifest.strippedFiles);
 
-        // Verification check: ensure no raw original Voxy classes leaked into additions
+        // Strict verification: Verify zero raw original files ended up in additions
         for (String addition : manifest.additions) {
             if (origEntries.containsKey(addition)) {
-                throw new IllegalStateException("LEAK DETECTED: Original file present in additions: " + addition);
+                throw new IllegalStateException("Verification failed: Original file present in additions: " + addition);
             }
         }
 
@@ -173,6 +198,75 @@ public class VoxyDiffGenerator {
         System.out.println("  Stripped Files:             " + manifest.strippedFiles.size());
         System.out.println("  Manifest written to:        " + manifestPath);
         System.out.println("==================================================");
+    }
+
+    private static Set<String> loadModifiedSources(Path referenceSourceDir) {
+        Set<String> set = new HashSet<>();
+
+        // 1. If referenceSourceDir exists, compute diff dynamically
+        if (referenceSourceDir != null && Files.isDirectory(referenceSourceDir)) {
+            try {
+                Path localSrc = Paths.get("src/main/java").toAbsolutePath().normalize();
+                if (Files.isDirectory(localSrc)) {
+                    try (var stream = Files.walk(localSrc)) {
+                        stream.filter(p -> p.toString().endsWith(".java")).forEach(localFile -> {
+                            String rel = localSrc.relativize(localFile).toString().replace('\\', '/');
+                            Path refFile = referenceSourceDir.resolve(rel);
+                            if (Files.exists(refFile)) {
+                                try {
+                                    String localContent = Files.readString(localFile).replace("\r\n", "\n").trim();
+                                    String refContent = Files.readString(refFile).replace("\r\n", "\n").trim();
+                                    if (!localContent.equals(refContent)) {
+                                        set.add(rel);
+                                    }
+                                } catch (IOException e) {
+                                    set.add(rel);
+                                }
+                            }
+                        });
+                    }
+                    if (!set.isEmpty()) {
+                        System.out.println("Dynamically detected " + set.size() + " modified source files from reference sources.");
+                        return set;
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Warning: Could not dynamically diff reference sources: " + e.getMessage());
+            }
+        }
+
+        // 2. Fall back to embedded/resource voxy_modified_sources.txt
+        try (InputStream is = VoxyDiffGenerator.class.getResourceAsStream("/voxy_modified_sources.txt")) {
+            if (is != null) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        line = line.trim();
+                        if (!line.isEmpty() && !line.startsWith("#")) {
+                            set.add(line);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // 3. Fall back to file src/main/resources/voxy_modified_sources.txt
+        if (set.isEmpty()) {
+            Path listFile = Paths.get("src/main/resources/voxy_modified_sources.txt");
+            if (Files.exists(listFile)) {
+                try {
+                    for (String line : Files.readAllLines(listFile, StandardCharsets.UTF_8)) {
+                        line = line.trim();
+                        if (!line.isEmpty() && !line.startsWith("#")) {
+                            set.add(line);
+                        }
+                    }
+                } catch (IOException ignored) {}
+            }
+        }
+
+        System.out.println("Loaded " + set.size() + " modified source files filter.");
+        return set;
     }
 
     private static Map<String, byte[]> readJarEntries(Path jarPath) throws IOException {
@@ -210,7 +304,6 @@ public class VoxyDiffGenerator {
                         baos.write(buf, 0, r);
                     }
                     String response = baos.toString(StandardCharsets.UTF_8);
-                    // Extract "url" from json files array
                     int filesIdx = response.indexOf("\"files\"");
                     if (filesIdx != -1) {
                         int urlIdx = response.indexOf("\"url\":", filesIdx);

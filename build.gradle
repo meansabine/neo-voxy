@@ -65,67 +65,91 @@ compileJava.doLast {
     sourceSets.main.output.classesDirs.each { dir ->
         def classFile = new File(dir, "me/cortex/voxy/client/config/VoxyConfig.class")
         if (classFile.exists()) {
-            println "Transforming ${classFile} to add int sectionRenderDistance for SeedGen compat..."
+            boolean hasField = false
             def cr = new org.objectweb.asm.ClassReader(classFile.bytes)
-            def cw = new org.objectweb.asm.ClassWriter(cr, 0)
-            def cv = new org.objectweb.asm.ClassVisitor(org.objectweb.asm.Opcodes.ASM9, cw) {
+            def checkVisitor = new org.objectweb.asm.ClassVisitor(org.objectweb.asm.Opcodes.ASM9) {
                 @Override
-                void visitEnd() {
-                    def fv = cv.visitField(
-                        org.objectweb.asm.Opcodes.ACC_PUBLIC | org.objectweb.asm.Opcodes.ACC_TRANSIENT,
-                        "sectionRenderDistance",
-                        "I",
-                        null,
-                        null
-                    )
-                    if (fv != null) {
-                        fv.visitEnd()
-                    }
-                    super.visitEnd()
+                org.objectweb.asm.FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+                    if (name == "sectionRenderDistance") hasField = true
+                    return super.visitField(access, name, descriptor, signature, value)
                 }
             }
-            cr.accept(cv, 0)
-            classFile.bytes = cw.toByteArray()
-            println "Successfully added transient int sectionRenderDistance to VoxyConfig.class"
+            cr.accept(checkVisitor, 0)
+
+            if (!hasField) {
+                println "Transforming ${classFile} to add int sectionRenderDistance for SeedGen compat..."
+                def cw = new org.objectweb.asm.ClassWriter(cr, 0)
+                def cv = new org.objectweb.asm.ClassVisitor(org.objectweb.asm.Opcodes.ASM9, cw) {
+                    @Override
+                    void visitEnd() {
+                        def fv = cv.visitField(
+                            org.objectweb.asm.Opcodes.ACC_PUBLIC | org.objectweb.asm.Opcodes.ACC_TRANSIENT,
+                            "sectionRenderDistance",
+                            "I",
+                            null,
+                            null
+                        )
+                        if (fv != null) {
+                            fv.visitEnd()
+                        }
+                        super.visitEnd()
+                    }
+                }
+                cr.accept(cv, 0)
+                classFile.bytes = cw.toByteArray()
+                println "Successfully added transient int sectionRenderDistance to VoxyConfig.class"
+            }
         }
 
         def worldEngineFile = new File(dir, "me/cortex/voxy/common/world/WorldEngine.class")
         if (worldEngineFile.exists()) {
-            println "Transforming ${worldEngineFile} to add void saveSection(WorldSection) bridge for SeedGen compat..."
+            boolean hasMethod = false
             def cr = new org.objectweb.asm.ClassReader(worldEngineFile.bytes)
-            def cw = new org.objectweb.asm.ClassWriter(cr, 0)
-            def cv = new org.objectweb.asm.ClassVisitor(org.objectweb.asm.Opcodes.ASM9, cw) {
+            def checkVisitor = new org.objectweb.asm.ClassVisitor(org.objectweb.asm.Opcodes.ASM9) {
                 @Override
-                void visitEnd() {
-                    def mv = cv.visitMethod(
-                        org.objectweb.asm.Opcodes.ACC_PUBLIC,
-                        "saveSection",
-                        "(Lme/cortex/voxy/common/world/WorldSection;)V",
-                        null,
-                        null
-                    )
-                    if (mv != null) {
-                        mv.visitCode()
-                        mv.visitVarInsn(org.objectweb.asm.Opcodes.ALOAD, 0)
-                        mv.visitVarInsn(org.objectweb.asm.Opcodes.ALOAD, 1)
-                        mv.visitMethodInsn(
-                            org.objectweb.asm.Opcodes.INVOKEVIRTUAL,
-                            "me/cortex/voxy/common/world/WorldEngine",
-                            "saveSection",
-                            "(Lme/cortex/voxy/common/world/WorldSection;)Z",
-                            false
-                        )
-                        mv.visitInsn(org.objectweb.asm.Opcodes.POP)
-                        mv.visitInsn(org.objectweb.asm.Opcodes.RETURN)
-                        mv.visitMaxs(2, 2)
-                        mv.visitEnd()
-                    }
-                    super.visitEnd()
+                org.objectweb.asm.MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                    if (name == "saveSection" && descriptor == "(Lme/cortex/voxy/common/world/WorldSection;)V") hasMethod = true
+                    return super.visitMethod(access, name, descriptor, signature, exceptions)
                 }
             }
-            cr.accept(cv, 0)
-            worldEngineFile.bytes = cw.toByteArray()
-            println "Successfully added void saveSection(WorldSection) bridge to WorldEngine.class"
+            cr.accept(checkVisitor, 0)
+
+            if (!hasMethod) {
+                println "Transforming ${worldEngineFile} to add void saveSection(WorldSection) bridge for SeedGen compat..."
+                def cw = new org.objectweb.asm.ClassWriter(cr, 0)
+                def cv = new org.objectweb.asm.ClassVisitor(org.objectweb.asm.Opcodes.ASM9, cw) {
+                    @Override
+                    void visitEnd() {
+                        def mv = cv.visitMethod(
+                            org.objectweb.asm.Opcodes.ACC_PUBLIC,
+                            "saveSection",
+                            "(Lme/cortex/voxy/common/world/WorldSection;)V",
+                            null,
+                            null
+                        )
+                        if (mv != null) {
+                            mv.visitCode()
+                            mv.visitVarInsn(org.objectweb.asm.Opcodes.ALOAD, 0)
+                            mv.visitVarInsn(org.objectweb.asm.Opcodes.ALOAD, 1)
+                            mv.visitMethodInsn(
+                                org.objectweb.asm.Opcodes.INVOKEVIRTUAL,
+                                "me/cortex/voxy/common/world/WorldEngine",
+                                "saveSection",
+                                "(Lme/cortex/voxy/common/world/WorldSection;)Z",
+                                false
+                            )
+                            mv.visitInsn(org.objectweb.asm.Opcodes.POP)
+                            mv.visitInsn(org.objectweb.asm.Opcodes.RETURN)
+                            mv.visitMaxs(2, 2)
+                            mv.visitEnd()
+                        }
+                        super.visitEnd()
+                    }
+                }
+                cr.accept(cv, 0)
+                worldEngineFile.bytes = cw.toByteArray()
+                println "Successfully added void saveSection(WorldSection) bridge to WorldEngine.class"
+            }
         }
     }
 }
@@ -245,7 +269,8 @@ tasks.register('generateVoxyPatches', JavaExec) {
         originalVoxyJar.absolutePath,
         remapJar.archiveFile.get().asFile.absolutePath,
         file("src/generated/resources").absolutePath,
-        project.version.toString()
+        project.version.toString(),
+        file("${projectDir}/../voxy-dev/src/main/java").absolutePath
     ]
 }
 
