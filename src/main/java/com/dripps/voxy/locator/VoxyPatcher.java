@@ -272,8 +272,25 @@ public class VoxyPatcher {
                     ZipEntry newEntry = new ZipEntry(name);
                     newEntry.setTime(entry.getTime());
                     zos.putNextEntry(newEntry);
-                    try (InputStream is = officialZip.getInputStream(entry)) {
-                        copyStream(is, zos);
+                    if (name.endsWith(".class")) {
+                        byte[] classBytes;
+                        try (InputStream is = officialZip.getInputStream(entry)) {
+                            classBytes = DeltaEngine.readFully(is, (int) entry.getSize());
+                        }
+                        if (classBytes.length >= 8 && classBytes[0] == (byte) 0xCA && classBytes[1] == (byte) 0xFE &&
+                                classBytes[2] == (byte) 0xBA && classBytes[3] == (byte) 0xBE) {
+                            int major = ((classBytes[6] & 0xFF) << 8) | (classBytes[7] & 0xFF);
+                            if (major > 65) {
+                                // Align class file version to Java 21 for 1.21.1 JVM compatibility
+                                classBytes[6] = 0;
+                                classBytes[7] = 65;
+                            }
+                        }
+                        zos.write(classBytes);
+                    } else {
+                        try (InputStream is = officialZip.getInputStream(entry)) {
+                            copyStream(is, zos);
+                        }
                     }
                     zos.closeEntry();
                     processedEntries.add(name);
